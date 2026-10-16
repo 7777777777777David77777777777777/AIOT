@@ -1,3 +1,5 @@
+> Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
+
 # AIOT 拍題計算機：完整架構與開發規格
 
 更新：2026-10-16（Asia/Taipei）

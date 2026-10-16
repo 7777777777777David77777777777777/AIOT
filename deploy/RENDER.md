@@ -1,3 +1,5 @@
+> Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
+
 # Render 部署
 
 ## 開發分支目前上傳設定
@@ -29,7 +31,7 @@ Render 免費方案無 Shell 時：先註冊自己的管理帳號，從「我的
 Singapore 區域。Render 透過 `fromDatabase` 自動注入內部 `DATABASE_URL`，
 程式使用 psycopg 3 連線；雲端缺少此設定時會停止啟動，避免意外使用臨時 SQLite。
 
-1. Render → New → Blueprint，選本儲存庫與 `mester` 分支，使用根目錄 `render.yaml`。
+1. Render → New → Blueprint，選本儲存庫與 `main` 分支，使用根目錄 `render.yaml`。
 2. 確認畫面中的 Web Service 與 Postgres 都是 Free，再建立。
 3. 若先前已手動建立 Postgres，請勿重複建立；手動部署 Web Service 時，
    將資料庫的 Internal Database URL 填入 Web Service 的 `DATABASE_URL`。
@@ -55,7 +57,7 @@ Render 對外只連 Apache 的 `$PORT`，Python 固定監聽容器內的 127.0.0
 1. 將專案程式上傳到自己的 GitHub 儲存庫。不要上傳 `.session-secret`、
    `.credential-key`、`exam_solver.db`、`uploads/`、`debug/` 或 `.env`。
    `.gitignore` 已排除這些資料；Docker 也只複製執行所需檔案。
-2. 在 Render 選 New → Blueprint，連接儲存庫的 `mester` 分支，檔案路徑指定 `deploy/render-persistent.yaml`。
+2. 在 Render 選 New → Blueprint，連接儲存庫的 `main` 分支，檔案路徑指定 `deploy/render-persistent.yaml`。
 3. 此設定包含 **付費 Web Service 與 1 GB 持久磁碟**，先確認畫面費用再建立。
 4. 部署後打開 Render 提供的 HTTPS 網址 `/login.php`，重新註冊帳號。
 5. 在模型設定填自己的 Gemini Key、讀取模型版本、儲存設定。
@@ -97,8 +99,8 @@ docker run --rm -p 10000:10000 -e COOKIE_SECURE=0 -v photo-data:/var/data photo-
 
 ## 分支
 
-`develop` 用於開發，驗證後合併至 `mester`；Render 使用 `mester`。
-`main` 保留初始版本。分支名稱依目前專案約定為 `mester`。
+`develop` 用於開發，驗證後合併至 `main`；Render 使用 `main`。
+`main` 保留初始版本。分支名稱依目前專案約定為 `main`。
 
 參考：
 - https://render.com/docs/docker

@@ -1,3 +1,5 @@
+> Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
+
 # 專案記憶
 
 更新：2026-10-16。完整約定見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。

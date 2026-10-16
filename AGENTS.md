@@ -1,3 +1,5 @@
+> Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
+
 # 開發交接
 
 開始本專案工作時先讀 PROJECT_MEMORY.md；架構與已確認需求見 docs/ARCHITECTURE.md。

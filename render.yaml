@@ -11,7 +11,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    branch: mester
+    branch: main
     healthCheckPath: /health.php
     envVars:
       - key: DATABASE_URL

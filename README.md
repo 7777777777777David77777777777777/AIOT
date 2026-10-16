@@ -1,3 +1,5 @@
+> Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
+
 # 拍題解答：PHP 網頁＋Python API
 
 ## 使用
@@ -46,7 +48,7 @@ Python 套件見 `requirements.txt`。本專案已備妥官方 PHP 8.5.11 獨立
 早期 `server.py` 與根目錄 `static/index.html` 為舊版，請使用新的 `run.bat`。原 Flask 首頁現導向 PHP 網頁。
 # Render 部署更新
 
-根目錄 `render.yaml`：免費網站 + 免費 Postgres，部署分支為 `mester`。
+根目錄 `render.yaml`：免費網站 + 免費 Postgres，部署分支為 `main`。
 完整設定、已有資料庫的連接方式及照片限制見 [deploy/RENDER.md](deploy/RENDER.md)。
 本機未設定 `DATABASE_URL` 時仍使用 SQLite；雲端資料庫由 Render 注入連線。
 免費 Postgres 有 30 天期限，照片目前仍使用網站臨時檔案空間。
