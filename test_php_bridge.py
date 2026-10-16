@@ -37,6 +37,22 @@ class PHPBridgeTests(unittest.TestCase):
         else:raise RuntimeError('PHP server did not start')
     def tearDown(self):
         self.client.close();self.php.terminate();self.php.wait(timeout=5);self.api.shutdown();self.api.server_close();self.tmp.cleanup()
+    def test_php_admin_page_permissions(self):
+        page=self.client.get(self.base+'/login.php?mode=register')
+        csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',page.text).group(1)
+        self.client.post(self.base+'/login.php?mode=register',data={'csrf':csrf,'username':'admin-page-test','password':'test12345','confirm_password':'test12345'})
+        self.assertEqual(self.client.get(self.base+'/admin.php').status_code,403)
+        from app.models.user import User
+        from app.models.admin import AdminRole
+        from app.database import db
+        with self.app.app_context():
+            user=User.query.filter_by(username='admin-page-test').first()
+            db.session.add(AdminRole(user_id=user.id));db.session.commit()
+        page=self.client.get(self.base+'/admin.php')
+        self.assertEqual(page.status_code,200)
+        self.assertIn('id="memberList"',page.text)
+        self.assertEqual(self.client.get(self.base+'/api/admin/members').json()['total'],1)
+
     def test_php_login_multi_photo_and_csrf(self):
         page=self.client.get(self.base+'/login.php?mode=register')
         csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',page.text).group(1)

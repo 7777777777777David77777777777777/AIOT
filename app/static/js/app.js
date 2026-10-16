@@ -24,7 +24,7 @@ function requireUser() {
   window.location.href = '/login.php'; return false;
 }
 async function refreshUser() {
-  const data = await api('/api/auth/me'); state.user = data.user; state.devices = data.devices || [];
+  const data = await api('/api/auth/me'); state.user = data.user; state.devices = data.devices || []; $('adminLink').hidden = !data.user?.is_admin;
   $('accountName').textContent = data.user ? data.user.username : '登入／註冊';
   $('loginLink').hidden = !!data.user;
   $('keyStatus').textContent = data.user?.has_api_key ? '已設定金鑰，輸入新金鑰可更新。' : '尚未設定 Gemini API Key。';

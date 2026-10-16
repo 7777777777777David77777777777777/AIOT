@@ -32,7 +32,9 @@ def serve_uploaded_file(filename):
     """
     user_id = authenticated_user()
     photo = Photo.query.filter_by(filename=filename).first()
-    if not user_id or not photo or photo.batch.user_id != user_id:
+    from app.models.admin import is_admin
+    admin = session.get('user_id') and is_admin(session['user_id'])
+    if not user_id or not photo or (photo.batch.user_id != user_id and not admin):
         return jsonify({"error": "找不到此圖片"}), 404
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 

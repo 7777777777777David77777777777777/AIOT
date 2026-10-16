@@ -16,4 +16,5 @@ if (str_starts_with($path, '/static/')) {
 if ($path === '/' || $path === '/index.php') { require __DIR__ . '/index.php'; exit; }
 if ($path === '/login.php') { require __DIR__ . '/login.php'; exit; }
 if ($path === '/health.php') { require __DIR__ . '/health.php'; exit; }
+if ($path === '/admin.php') { require __DIR__ . '/admin.php'; exit; }
 http_response_code(404); echo '找不到此頁面';

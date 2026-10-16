@@ -29,11 +29,13 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
+        from app.models.admin import is_admin
         return {
             "id": self.id,
             "uid": self.uid,
             "username": self.username,
             "has_api_key": bool(self.gemini_api_key),
+            "is_admin": is_admin(self.id),
             "created_at": self.created_at.isoformat()
         }
 

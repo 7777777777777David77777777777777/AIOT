@@ -54,6 +54,8 @@ def create_app(config_class=Config):
     flask_app.register_blueprint(auth_bp)
     from app.views.connection_view import connection_bp
     flask_app.register_blueprint(connection_bp)
+    from app.views.admin_view import admin_bp
+    flask_app.register_blueprint(admin_bp)
 
     # 建立資料表
     with flask_app.app_context():

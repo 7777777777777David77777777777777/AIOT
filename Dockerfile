@@ -10,6 +10,7 @@ COPY app ./app
 COPY web ./web
 COPY deploy ./deploy
 COPY wsgi.py ./
+COPY manage_admin.py ./
 RUN cp deploy/php.ini /etc/php/8.2/apache2/conf.d/99-photo.ini
 EXPOSE 10000
 CMD ["python", "deploy/start.py"]

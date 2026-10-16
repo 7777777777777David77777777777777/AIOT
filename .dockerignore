@@ -3,6 +3,7 @@
 !requirements.txt
 !requirements-render.txt
 !wsgi.py
+!manage_admin.py
 !deploy/
 !deploy/**
 !app/

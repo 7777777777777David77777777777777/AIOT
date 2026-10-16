@@ -1,5 +1,19 @@
 # Render 部署
 
+## 管理員後台
+
+網址 `/admin.php`，可搜尋會員、查看模型設定歷史、照片、解答與 JSON。
+完整 API Key 需另外按「顯示完整 API Key」，只允許管理員 Session；
+每次查看記錄在 `admin_audit`，不保存金鑰值。ESP32 裝置碼不能存取管理 API。
+
+本機已有帳號可執行 `python manage_admin.py grant admin`，撤銷用
+`python manage_admin.py revoke admin`。權限保存於 `admin_roles` 表。
+
+Render 免費方案無 Shell 時：先註冊自己的管理帳號，從「我的裝置」取得該帳號
+6 碼 UID，在 Web Service 環境變數設定 `ADMIN_UIDS=該UID`，重啟服務。
+仍須使用該帳號的密碼登入，知道 UID 本身無法進入後台；不要把別人的 UID 填入。
+雲端權限與本機資料庫獨立，不會因本機已授權而自動變成管理員。
+
 ## 目前預設：免費網站 + Postgres
 
 根目錄 `render.yaml` 已改為建立免費 Web Service 與免費 Postgres，兩者同在

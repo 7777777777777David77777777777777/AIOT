@@ -16,7 +16,7 @@ web_session(); page_headers(); $csrf = $_SESSION["csrf"]; session_write_close();
 <a href="/" class="brand"><span class="brand-icon">解</span> 拍題解答</a>
 <button class="new-chat" id="newChat"><span>＋</span> 新對話</button>
 <div class="sidebar-section">對話紀錄</div><div id="historyList" class="history-list"><p class="sidebar-empty">登入後查看紀錄</p></div>
-<div class="sidebar-bottom"><button id="settingsBtn" class="side-action">模型設定 <span>↗</span></button><button id="deviceBtn" class="side-action">我的裝置 <span>↗</span></button><button id="accountBtn" class="account"><span class="avatar">人</span><span id="accountName">登入／註冊</span><span>⌄</span></button></div>
+<div class="sidebar-bottom"><a id="adminLink" class="side-action" href="/admin.php" hidden>管理員後台 <span>↗</span></a><button id="settingsBtn" class="side-action">模型設定 <span>↗</span></button><button id="deviceBtn" class="side-action">我的裝置 <span>↗</span></button><button id="accountBtn" class="account"><span class="avatar">人</span><span id="accountName">登入／註冊</span><span>⌄</span></button></div>
 </aside><button class="sidebar-scrim" id="sidebarScrim" aria-label="關閉選單" hidden></button>
 <div class="main-shell">
 <header class="chat-header"><div class="header-title"><button id="menuBtn" class="icon-btn" aria-label="開啟選單">☰</button><h1 id="chatTitle">新對話</h1></div><div class="header-actions"><span class="photo-only"><span></span> 僅限照片</span><a class="login-link" id="loginLink" href="/login.php">登入</a><button id="newChatMobile" class="icon-btn" aria-label="新對話">＋</button></div></header>

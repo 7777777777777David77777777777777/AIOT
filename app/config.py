@@ -23,6 +23,7 @@ def database_url(value=None):
     return value
 
 class Config:
+    ADMIN_UIDS = os.environ.get("ADMIN_UIDS", "")
     ENCRYPT_STORED_KEYS = os.environ.get("ENCRYPT_STORED_KEYS", "0") == "1"
     SECRET_KEY = os.environ.get("SECRET_KEY") or open(secret_path).read().strip()
     SQLALCHEMY_DATABASE_URI = database_url()
