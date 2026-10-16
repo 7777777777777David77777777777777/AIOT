@@ -221,7 +221,17 @@ function createAssistant() {
   const sheet = document.createElement('div'); sheet.className = 'solution-sheet';
   section.append(label, sheet); $('conversation').append(section); return sheet;
 }
+// Older stored answers sometimes contain TeX commands without math delimiters.
+// Wrap complete commands before Markdown can consume their backslashes.
+function delimitBareMath(text) {
+  const math = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$\n]+\$)/g;
+  return String(text).split(math).map((part, index) => {
+    if (index % 2) return part;
+    return part.replace(/\\(?:frac|dfrac|tfrac)\s*(\{(?:[^{}]|\{[^{}]*\})*\})\s*(\{(?:[^{}]|\{[^{}]*\})*\})|\\sqrt(?:\[[^\]]+\])?\s*(\{(?:[^{}]|\{[^{}]*\})*\})|\\(?:lambda|mu|sigma|alpha|beta|theta|pi|chi|times|cdot|approx|leq?|geq?|infty)\b/g, formula => '$' + formula + '$');
+  }).join('');
+}
 function renderSolution(sheet, text, questions) {
+  text = delimitBareMath(text);
   const body = document.createElement('div'); body.className = 'solution-body';
   if (window.marked && window.DOMPurify) {
     const formulas = [];
