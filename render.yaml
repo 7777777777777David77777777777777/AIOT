@@ -1,11 +1,23 @@
-# Free development demo: local data is ephemeral.
+# Free web + free Postgres (database expires after 30 days).
+databases:
+  - name: photo-exam-db
+    plan: free
+    region: singapore
+    ipAllowList: []
+
 services:
   - type: web
     name: photo-exam-solver
     runtime: docker
     plan: free
+    region: singapore
+    branch: mester
     healthCheckPath: /health.php
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: photo-exam-db
+          property: connectionString
       - key: DATA_DIR
         value: /var/data
       - key: SECRET_KEY

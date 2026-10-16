@@ -10,6 +10,8 @@ services:
       mountPath: /var/data
       sizeGB: 1
     envVars:
+      - key: DATABASE_URL
+        value: sqlite:////var/data/exam_solver.db
       - key: DATA_DIR
         value: /var/data
       - key: SECRET_KEY

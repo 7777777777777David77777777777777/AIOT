@@ -10,12 +10,23 @@ if not os.path.exists(secret_path):
     with open(secret_path, "w") as secret_file:
         secret_file.write(secrets.token_hex(32))
 
+
+def database_url(value=None):
+    value = (value if value is not None else os.environ.get("DATABASE_URL", "")).strip()
+    if not value:
+        if os.environ.get("RENDER") == "true":
+            raise RuntimeError("Render requires DATABASE_URL; refusing temporary SQLite fallback")
+        return f"sqlite:///{os.path.join(DATA_DIR, 'exam_solver.db')}"
+    for prefix in ("postgres://", "postgresql://"):
+        if value.startswith(prefix):
+            return "postgresql+psycopg://" + value[len(prefix):]
+    return value
+
 class Config:
     ENCRYPT_STORED_KEYS = os.environ.get("ENCRYPT_STORED_KEYS", "0") == "1"
     SECRET_KEY = os.environ.get("SECRET_KEY") or open(secret_path).read().strip()
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", f"sqlite:///{os.path.join(DATA_DIR, 'exam_solver.db')}"
-    )
+    SQLALCHEMY_DATABASE_URI = database_url()
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # 圖片上傳目錄

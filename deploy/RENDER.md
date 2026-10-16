@@ -1,5 +1,29 @@
 # Render 部署
 
+## 目前預設：免費網站 + Postgres
+
+根目錄 `render.yaml` 已改為建立免費 Web Service 與免費 Postgres，兩者同在
+Singapore 區域。Render 透過 `fromDatabase` 自動注入內部 `DATABASE_URL`，
+程式使用 psycopg 3 連線；雲端缺少此設定時會停止啟動，避免意外使用臨時 SQLite。
+
+1. Render → New → Blueprint，選本儲存庫與 `mester` 分支，使用根目錄 `render.yaml`。
+2. 確認畫面中的 Web Service 與 Postgres 都是 Free，再建立。
+3. 若先前已手動建立 Postgres，請勿重複建立；手動部署 Web Service 時，
+   將資料庫的 Internal Database URL 填入 Web Service 的 `DATABASE_URL`。
+   資料庫與網站必須在同一區域；不要把連線字串提交 GitHub 或貼到公開紀錄。
+4. 首次啟動會建立空資料表。本機 SQLite 帳號不會自動搬移，請在雲端註冊。
+
+網站休眠或重新部署後，Postgres 內的帳號、裝置碼、模型設定及解答紀錄仍保留。
+**免費 Postgres 會在建立後 30 天到期**，到期前需匯出資料或升級。
+照片仍存於免費網站的臨時檔案空間，休眠／重新部署後可能消失；
+舊解答文字可讀取，但原照片與使用原照片再次解題仍會受影響。
+目前沒有自動搬移 SQLite 資料、照片儲存服務或自動資料庫備份。
+
+若 Render 已有其他免費 Postgres，需使用該資料庫或調整方案，避免超過免費數量限制。
+健康檢查 `/health.php` 會透過 Python 檢查資料庫是否能連線。
+
+以下保留付費磁碟替代方案，不是根目錄 Blueprint 的預設。
+
 本專案使用同一個 Docker Web Service 執行 Apache/PHP 與 Gunicorn/Python。
 Render 對外只連 Apache 的 `$PORT`，Python 固定監聽容器內的 127.0.0.1:5001。
 
@@ -20,11 +44,10 @@ SECRET_KEY 由 Render 產生；資料庫與照片放在 `/var/data`，不在原�
 
 ## 免費臨時展示
 
-根目錄 `render.yaml` 已設定 Free，沒有持久磁碟。Blueprint 選 `mester` 分支即可。
-也可以手動新增 Docker Web Service，選 Free。
+根目錄 `render.yaml` 已設定 Free 並接獨立 Postgres，不含持久磁碟。
 設定 `DATA_DIR=/var/data`、`COOKIE_SECURE=1`、固定且隨機的 `SECRET_KEY`，
 健康檢查路徑 `/health.php`。不需要另外填 Build Command 或 Start Command。
-沒有持久磁碟時，帳號、照片和金鑰可能在重啟、重新部署後消失，不能當正式資料保存。
+Postgres 保存帳號與金鑰；沒有持久磁碟時，上傳照片可能在重啟、重新部署後消失。
 
 ## ESP32
 

@@ -15,7 +15,7 @@ class User(db.Model):
     uid = db.Column(db.String(10), unique=True, nullable=False, index=True) # 永久固定 6 碼身分 UID
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    gemini_api_key = db.Column(db.String(128), nullable=True) # 使用者自訂的模型 Key
+    gemini_api_key = db.Column(db.Text, nullable=True) # 使用者自訂的模型 Key
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 關聯

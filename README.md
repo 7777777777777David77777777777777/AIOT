@@ -44,6 +44,13 @@ Python 套件見 `requirements.txt`。本專案已備妥官方 PHP 8.5.11 獨立
 尚未使用真實模型金鑰進行外部解題測試。解題仍是同步請求，沒有持久化背景佇列、取消與 request_id 去重。ESP32 韌體、裝置螢幕圖片輸出與 RGB565 實測尚未完成。
 
 早期 `server.py` 與根目錄 `static/index.html` 為舊版，請使用新的 `run.bat`。原 Flask 首頁現導向 PHP 網頁。
+# Render 部署更新
+
+根目錄 `render.yaml`：免費網站 + 免費 Postgres，部署分支為 `mester`。
+完整設定、已有資料庫的連接方式及照片限制見 [deploy/RENDER.md](deploy/RENDER.md)。
+本機未設定 `DATABASE_URL` 時仍使用 SQLite；雲端資料庫由 Render 注入連線。
+免費 Postgres 有 30 天期限，照片目前仍使用網站臨時檔案空間。
+
 # 固定解答格式
 
 開發環境預設 `ENCRYPT_STORED_KEYS=0`：users.gemini_api_key 與
