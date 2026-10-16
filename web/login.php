@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 $csrf = $_SESSION['csrf']; session_write_close();
 ?>
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $mode === 'register' ? '註冊' : '登入' ?> · 拍題解答</title><link rel="stylesheet" href="/static/css/style.css"></head>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $mode === 'register' ? '註冊' : '登入' ?> · 拍題解答</title><link rel="stylesheet" href="/static/css/style.css?v=vertical-1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet"></head>
 <body class="auth-page"><main class="auth-card"><a href="/index.php" class="brand"><span class="brand-icon">解</span>拍題解答</a><h1><?= $mode === 'register' ? '建立帳號' : '登入' ?></h1>
 <form method="post" action="/login.php<?= $mode === 'register' ? '?mode=register' : '' ?>">
 <input type="hidden" name="csrf" value="<?= escape_html($csrf) ?>">

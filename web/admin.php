@@ -7,7 +7,7 @@ if (empty($me['authenticated'])) { header('Location: /login.php'); exit; }
 if (empty($me['user']['is_admin'])) { http_response_code(403); echo '只有管理員可以查看此頁面'; exit; }
 web_session(); page_headers();
 ?>
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="<?= escape_html($_SESSION['csrf']) ?>"><title>管理員後台 · 拍題解答</title><link rel="stylesheet" href="/static/css/admin.css"></head>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="<?= escape_html($_SESSION['csrf']) ?>"><title>管理員後台 · 拍題解答</title><link rel="stylesheet" href="/static/css/admin.css?v=font-1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet"></head>
 <body><header><div><span class="eyebrow">拍題解答</span><h1>管理員後台</h1></div><a href="/index.php">返回聊天室 ↗</a></header>
 <main><section class="members"><h2>會員</h2><form id="searchForm"><input id="search" placeholder="搜尋會員帳號" aria-label="搜尋會員帳號"><button>搜尋</button></form><p id="memberCount"></p><div id="memberList"></div><nav><button id="previousMembers">上一頁</button><span id="membersPage"></span><button id="nextMembers">下一頁</button></nav></section>
 <section id="memberDetail" class="detail"><p class="muted">選擇左側會員，查看模型設定與解題紀錄。</p></section></main>

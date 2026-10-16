@@ -12,3 +12,15 @@ html,body{height:100%;overflow:hidden}.main-shell{overflow:hidden}.auth-page{hei
 #settingsDialog{max-height:90dvh;overflow:auto}#settingsDialog select{width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;background:white;margin:8px 0 16px}#loadModels{margin:12px 0}.connection-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0;border-top:1px solid #eee}.connection-row small{display:block;font-size:11px;color:#777;overflow-wrap:anywhere}.connection-row button{white-space:nowrap}
 
 .paste-photos{background:transparent;border:1px solid #ddd;border-radius:5px;padding:6px 9px;white-space:nowrap;font-size:12px}.composer:focus-visible{outline:2px solid #a33558;outline-offset:3px}.composer.dragging{outline:2px dashed #a33558;background:#fff4f7}@media(max-width:760px){.choose-photos{font-size:11px;min-width:0}.paste-photos{padding:5px;font-size:11px}}
+
+/* Shared Traditional Chinese sans-serif typography. */
+:root{--site-font:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;--serif:var(--site-font)}
+body,button,input,textarea,select{font-family:var(--site-font)}
+.solution-body,.solution-body h1,.solution-body h2,.solution-body h3,.solution-body h4,.question-source,.clarity,.brand-icon,.empty-icon{font-family:var(--site-font)}
+.answer-group + .answer-group{margin-top:34px;padding-top:26px;border-top:1px solid #e3e1db}
+.answer-group-title{margin:0 0 5px!important;font-size:21px!important;font-weight:700;line-height:1.5}
+.question-header{margin:14px 0 8px}.question-header h4{margin:0;font-size:17px;font-weight:700}
+.question-field{display:block;margin:10px 0 18px}.question-field .field-label{display:block;font-weight:700;margin-bottom:7px}
+.question-solution .field-label{background:none;color:inherit;text-align:left;height:auto;width:auto;line-height:inherit;font-size:inherit}
+.question-answer{border-top:0;padding-top:0}.question-answer .field-content{font-weight:700}
+.question-card + .question-card{margin-top:25px;padding-top:22px}.solution-body{line-height:1.85}

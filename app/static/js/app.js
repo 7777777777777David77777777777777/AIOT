@@ -223,14 +223,25 @@ function renderSolution(sheet, text, questions) {
   if (window.renderMathInElement) renderMathInElement(body, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false, trust: false });
   if (Array.isArray(questions) && questions.length) {
     body.replaceChildren();
+    let group = null, previousGroup = '';
     questions.forEach(q => {
+      const prefix = q.number.match(/^([一二三四五六七八九十百]+)[、.．]/)?.[1] || '';
+      const kind = q.question.match(/同義詞|反義詞/)?.[0] || '';
+      const sectionTitle = q.section || (kind ? (prefix ? prefix + '、' : '') + kind : '');
+      const groupKey = sectionTitle + ':' + q.photo_indices.join(',');
+      if (!group || groupKey !== previousGroup) {
+        group = document.createElement('section'); group.className = 'answer-group';
+        if (sectionTitle) { const heading = document.createElement('h3'); heading.className = 'answer-group-title'; heading.textContent = sectionTitle; group.append(heading); }
+        const source = document.createElement('small'); source.className = 'question-source'; source.textContent = '照片 ' + q.photo_indices.join('、'); group.append(source);
+        body.append(group); previousGroup = groupKey;
+      }
+
       const card = document.createElement('article'); card.className = 'question-card';
       const header = document.createElement('div'); header.className = 'question-header';
-      const number = document.createElement('h3'); number.textContent = q.number;
+      const number = document.createElement('h4'); const subnumber = q.number.match(/(?:[、.．]\s*|第\s*)([0-9]+)(?:\s*題)?$/)?.[1] || q.number; number.textContent = '題目' + subnumber;
       const clarity = document.createElement('span'); clarity.className = 'clarity ' + (q.clarity === 'clear' ? 'clear' : 'unclear');
       clarity.textContent = q.clarity === 'clear' ? '辨識清楚' : '需補拍'; header.append(number, clarity);
-      const source = document.createElement('small'); source.className = 'question-source'; source.textContent = '照片 ' + q.photo_indices.join('、');
-      card.append(header, source);
+      card.append(header);
       const field = (label, value, className) => {
         const row = document.createElement('div'); row.className = 'question-field ' + className;
         const title = document.createElement('span'); title.className = 'field-label'; title.textContent = label;
@@ -238,16 +249,16 @@ function renderSolution(sheet, text, questions) {
         // Reuse the sanitized Markdown/LaTeX renderer for each independent field.
         const holder = document.createElement('div'); renderSolution(holder, value || '無法辨識');
         content.append(...holder.querySelector('.solution-body').childNodes);
-        row.append(title, content); card.append(row);
+        if (label) row.append(title); row.append(content); card.append(row);
       };
-      field('題目', q.question, 'question-prompt');
+      field('', q.question, 'question-prompt');
       if (q.clarity === 'clear') {
         field('解', q.solution, 'question-solution'); field('答案', q.answer, 'question-answer');
       } else {
         field('原因', q.unclear_reason, 'question-unclear'); field('補拍', q.recapture_hint, 'question-unclear');
         const retry = document.createElement('button'); retry.className = 'recapture-button'; retry.textContent = '上傳補拍照片'; retry.onclick = choose; card.append(retry);
       }
-      body.append(card);
+      group.append(card);
     });
   }
   const actions = document.createElement('div'); actions.className = 'answer-actions';

@@ -9,8 +9,8 @@ web_session(); page_headers(); $csrf = $_SESSION["csrf"]; session_write_close();
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f7f5">
 <title>拍題解答</title>
 <meta name="csrf-token" content="<?= escape_html($csrf) ?>">
-<link rel="stylesheet" href="/static/vendor/katex/katex.min.css"><link rel="stylesheet" href="/static/css/style.css">
-</head>
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css"><link rel="stylesheet" href="/static/css/style.css?v=vertical-1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet"></head>
 <body>
 <aside class="sidebar" id="sidebar">
 <a href="/" class="brand"><span class="brand-icon">解</span> 拍題解答</a>
@@ -28,5 +28,5 @@ web_session(); page_headers(); $csrf = $_SESSION["csrf"]; session_write_close();
 <dialog id="accountDialog"><div class="dialog-heading"><h2>帳號</h2><button data-close aria-label="關閉">×</button></div><p id="accountInfo"></p><button id="logoutBtn" class="primary-btn">登出</button></dialog>
 <dialog id="imageDialog" class="image-dialog"><button data-close class="image-close" aria-label="關閉圖片">×</button><img id="fullImage" alt="題目原圖"></dialog>
 <div id="toast" role="status" hidden></div>
-<script src="/static/vendor/marked.min.js"></script><script src="/static/vendor/purify.min.js"></script><script src="/static/vendor/katex/katex.min.js"></script><script src="/static/vendor/katex/auto-render.min.js"></script><script src="/static/js/photo-input.js?v=1"></script><script src="/static/js/app.js?v=photo-input-3"></script>
+<script src="/static/vendor/marked.min.js"></script><script src="/static/vendor/purify.min.js"></script><script src="/static/vendor/katex/katex.min.js"></script><script src="/static/vendor/katex/auto-render.min.js"></script><script src="/static/js/photo-input.js?v=1"></script><script src="/static/js/app.js?v=vertical-answers-1"></script>
 </body></html>
