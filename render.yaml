@@ -1,0 +1,16 @@
+# Free development demo: local data is ephemeral.
+services:
+  - type: web
+    name: photo-exam-solver
+    runtime: docker
+    plan: free
+    healthCheckPath: /health.php
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: ENCRYPT_STORED_KEYS
+        value: "0"

@@ -1,0 +1,13 @@
+*
+!Dockerfile
+!requirements.txt
+!requirements-render.txt
+!wsgi.py
+!deploy/
+!deploy/**
+!app/
+!app/**
+!web/
+!web/**
+**/__pycache__/
+**/*.pyc

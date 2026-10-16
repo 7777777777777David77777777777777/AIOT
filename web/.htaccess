@@ -1,0 +1,5 @@
+DirectoryIndex index.php
+RewriteEngine On
+RewriteRule ^(?:bootstrap|router)\.php$ - [F,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ router.php [QSA,L]

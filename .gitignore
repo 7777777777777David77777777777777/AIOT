@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.session-secret
+.credential-key
+*.db
+uploads/
+
+.runtime/
+redesign/
+debug/
+previews/
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+render-deploy.zip
