@@ -1,3 +1,5 @@
+> 2026-10-16：部署程序已改為 Apache + Uvicorn + 獨立 worker，由 supervisord 管理。啟動先建立新增資料表，再開服務。尚未實測 Docker／Render／真實 Postgres；下方既有部署資料需配合新架構閱讀。main 是部署分支，develop 是開發分支。
+
 > Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
 
 # Render 部署
@@ -5,7 +7,7 @@
 ## 開發分支目前上傳設定
 
 每張照片最多 20 MiB、每次最多 8 張、照片合計最多 120 MiB。
-PHP 與 Flask 的請求上限為 128 MiB，預留 multipart 表單額外空間。
+PHP 與 FastAPI 的請求上限為 128 MiB，預留 multipart 表單額外空間。
 PHP 用暫存檔串流轉送；原始照片保存後，送模型的副本會縮至長邊最多
 3200 像素並限制 JPEG 大小。既有 2500 萬像素影像防護仍保留。
 目前僅在本機驗證跨 PHP/Python 的 9 MiB 檔案與一般流程，

@@ -34,3 +34,5 @@ body,button,input,textarea,select{font-family:var(--site-font)}
 @media(max-width:760px){.question-field{grid-template-columns:4.2em minmax(0,1fr);gap:9px}}
 
 .question-header{justify-content:space-between;margin:4px 0 12px}.question-number{font-size:18px;font-weight:700;color:var(--ink);line-height:1.5}
+
+.rename-chat{border:1px solid #ddd;border-radius:5px;background:white;padding:4px 8px;font-size:11px;white-space:nowrap}.header-title{flex:1}.header-title h1{min-width:0}

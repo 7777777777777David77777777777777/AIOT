@@ -1,3 +1,14 @@
+# FastAPI 開發更新（2026-10-16）
+
+`python run.py` 同時啟動 PHP 網站、Uvicorn API、獨立解題 worker。先安裝 requirements.txt；測試另裝 requirements-test.txt。
+原生新流程：上傳照片 → 持久任務 → 查進度 → 讀取聊天室紀錄，具 upload_id 防重複、工作復原及首張照片取名。
+登入、模型設定與管理員仍保留 Flask 相容層。ESP32 韌體尚未實作。
+
+- [架構與狀態](docs/ARCHITECTURE.md)
+- [API 契約](docs/API.md)
+- [測試紀錄](docs/TEST_REPORT.md)
+- 本機互動 API 文件：http://127.0.0.1:5000/api/docs
+
 > Branch update 2026-10-16: mester has been deleted. Use develop for development and main for deployment. This supersedes older branch descriptions below.
 
 # 拍題解答：PHP 網頁＋Python API
@@ -6,7 +17,7 @@
 
 執行 `run.bat`（或 `python run.py`），一次啟動 PHP 網站與 Python 服務。開啟 http://127.0.0.1:5000 。登入頁為 http://127.0.0.1:5000/login.php 。
 
-網頁只能傳送照片，不提供文字訊息或提示詞輸入。支援選取、拖曳及貼上 JPG、PNG、WebP；每張 8 MB、單次合計 30 MB，同一對話最多 8 張。先登入並在「模型設定」保存 Gemini API Key，再送出照片。可從左側重新開啟對話，繼續補照片。
+網頁只能傳送照片，不提供文字訊息或提示詞輸入。支援選取、拖曳及貼上 JPG、PNG、WebP；每張 20 MiB、每次合計 120 MiB、每次最多 8 張。先登入並在「模型設定」保存 Gemini API Key，再送出照片。可從左側重新開啟對話，繼續補照片。
 
 ## 分工
 
@@ -14,7 +25,7 @@
 - `web/login.php`：PHP 登入／註冊表單、表單驗證與頁面跳轉；帳號驗證交給 Python。
 - `web/bootstrap.php`：PHP 呼叫 Python API、轉送 Session Cookie、多照片與回應。
 - `web/router.php`：本機 PHP 網頁路由，提供 `/api/*` 與靜態資產。
-- `app/`：Python Flask 負責登入驗證、SQLite、照片保存與檢查、裝置 Token、歷史紀錄、Gemini。
+- `app/`：FastAPI v1 與 Flask 相容層負責登入驗證、SQLite、照片保存與檢查、裝置 Token、歷史紀錄、Gemini。
 - JavaScript 負責瀏覽器端照片預覽、送出與顯示解答；CSS 負責版面，PHP 不取代瀏覽器的這兩項技術。
 
 瀏覽器 → PHP → Python → Gemini。瀏覽器只連到 PHP；Python API 預設只監聽本機 5001。

@@ -7,7 +7,9 @@ from app.models.question import QuestionBatch, Message
 from app.database import db
 from app.model_images import prepare_image
 
-EXAM_SYSTEM_PROMPT = """你是參考解答卷編輯。只輸出符合指定 schema 的 JSON，以繁體中文回答。
+EXAM_SYSTEM_PROMPT = """必須回傳 chat_metadata。exam_title 只抄錄本次第一張照片明確可見的考卷標題，沒有標題填空字串，不得自行編造。
+subject 可依本次第一張照片的題目內容判斷科目，不需要照片印出科目名稱。例如英文單字釋義、文法、翻譯、英文閱讀理解填「英文」；代數、幾何、統計計算填「數學」；電路與電學填「電工原理」。請使用繁體中文科目名。不要只因題目用英文書寫就把英文數學或物理題歸為英文。只有內容不足以判別科目時才填空字串，不可從歷史照片補出科目。
+你是參考解答卷編輯。只輸出符合指定 schema 的 JSON，以繁體中文回答。
 每題 confidence 為 0 至 100 的整數，代表你對該題答案的自評信心百分比；請綜合讀題是否完整、推導、計算與知識依據逐題評估，不要每題固定填相同分數。此分數不是已查證正確率。答案未能確定或照片不清楚時也必須回報信心，不可用高分掩蓋缺少依據。
 請充分分析並核對再回答，但輸出只提供可檢驗的簡明解法，不輸出內部思考草稿或多套互相矛盾的猜測。
 不能宣稱「經查」「標準答案」或「依常見答案」，除非本次提供的資料中確實有可核對依據。歷史回答也可能錯誤，不能當成標準答案。
@@ -21,7 +23,7 @@ clear 的題目必須包含 question、solution；答案依據不足時 answer �
 
 class SolverController:
     @staticmethod
-    def process_solution(batch_id, user_prompt, photo_records, api_key, model_name=None, history_messages=None):
+    def process_solution(batch_id, user_prompt, photo_records, api_key, model_name=None, history_messages=None, persist=True):
         """
         組裝 Prompt 與圖片，呼叫 Gemini VLM API，並將對話持久化寫入資料庫
         """
@@ -36,8 +38,9 @@ class SolverController:
             role="user",
             content=user_prompt
         )
-        db.session.add(user_msg)
-        db.session.commit()
+        if persist:
+            db.session.add(user_msg)
+            db.session.commit()
 
         # 組裝 Gemini contents
         contents = []
@@ -48,7 +51,7 @@ class SolverController:
                 role = "user" if h.get("role") == "user" else "model"
                 contents.append({
                     "role": role,
-                    "parts": [{"text": h.get("content", "")}]
+                    "parts": [{"text": h.get("content", "")[:16000]}]
                 })
 
         current_parts = []
@@ -86,14 +89,16 @@ class SolverController:
             }
         }
 
-        batch.status = "solving"
-        db.session.commit()
+        if persist:
+            batch.status = "solving"
+            db.session.commit()
 
         resp = requests.post(endpoint, json=payload, timeout=Config.DEFAULT_TIMEOUT)
 
         if resp.status_code != 200:
-            batch.status = "failed"
-            db.session.commit()
+            if persist:
+                batch.status = "failed"
+                db.session.commit()
             err_data = resp.json().get("error", {})
             err_msg = err_data.get("message", resp.text)
             raise RuntimeError(f"Gemini API 錯誤 ({resp.status_code}): {err_msg}")
@@ -101,8 +106,9 @@ class SolverController:
         res_json = resp.json()
         candidates = res_json.get("candidates", [])
         if not candidates:
-            batch.status = "failed"
-            db.session.commit()
+            if persist:
+                batch.status = "failed"
+                db.session.commit()
             raise RuntimeError("模型未返回內容，可能被安全審查過濾。")
 
         reply_text = ""
@@ -128,14 +134,16 @@ class SolverController:
             role="model",
             content=json.dumps(structured, ensure_ascii=False)
         )
-        batch.status = status
-        db.session.add(ai_msg)
-        db.session.commit()
+        if persist:
+            batch.status = status
+            db.session.add(ai_msg)
+            db.session.commit()
 
         return {
             "batch_id": batch.id,
             "reply": reply_text,
             "model": model,
             "status": status,
-            "questions": structured["questions"]
+            "questions": structured["questions"],
+            "chat_metadata": structured["chat_metadata"]
         }

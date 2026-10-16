@@ -17,6 +17,10 @@ def prepare():
     os.environ["PYTHON_API_URL"] = "http://127.0.0.1:5001"
     os.environ["TRUST_PROXY"] = "1"
     os.environ.setdefault("COOKIE_SECURE", "1")
+    import sys
+    sys.path.insert(0, '/app')
+    from app import create_app
+    create_app()  # Initialize tables once before starting API and worker processes.
     Path("/etc/apache2/ports.conf").write_text(f"Listen {port}\n")
     Path("/etc/apache2/sites-enabled/000-default.conf").write_text(f'''<VirtualHost *:{port}>
     ServerName localhost

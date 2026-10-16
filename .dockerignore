@@ -4,6 +4,8 @@
 !requirements-render.txt
 !wsgi.py
 !manage_admin.py
+!asgi.py
+!worker.py
 !deploy/
 !deploy/**
 !app/

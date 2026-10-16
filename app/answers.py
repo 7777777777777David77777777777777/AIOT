@@ -10,8 +10,9 @@ QUESTION_SCHEMA = {"type": "OBJECT", "properties": {
     "confidence": {"type": "INTEGER", "minimum": 0, "maximum": 100, "description": "模型對本題答案的自評信心百分比，不是驗證結果"},
 }, "required": list(FIELDS) + ["photo_indices", "confidence"]}
 ANSWER_SCHEMA = {"type": "OBJECT", "properties": {
-    "questions": {"type": "ARRAY", "items": QUESTION_SCHEMA}
-}, "required": ["questions"]}
+    "questions": {"type": "ARRAY", "items": QUESTION_SCHEMA},
+    "chat_metadata": {"type": "OBJECT", "properties": {"exam_title": {"type": "STRING"}, "subject": {"type": "STRING"}}, "required": ["exam_title", "subject"]}
+}, "required": ["questions", "chat_metadata"]}
 
 
 def parse_answer(text, photo_count):
@@ -44,7 +45,11 @@ def parse_answer(text, photo_count):
         else:
             raise ValueError("清晰度格式錯誤")
         questions.append(check_question(q))
-    return {"format": "answer_sheet_v1", "questions": questions}
+    meta = data.get('chat_metadata') or {}
+    if not isinstance(meta, dict):
+        meta = {}
+    meta = {key: ' '.join(meta.get(key, '').split())[:100] if isinstance(meta.get(key), str) else '' for key in ('exam_title', 'subject')}
+    return {"format": "answer_sheet_v1", "questions": questions, "chat_metadata": meta}
 
 
 def answer_text(data):

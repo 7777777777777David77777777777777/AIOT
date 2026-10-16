@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const state = { user: null, devices: [], batches: [], images: [], batch: null, busy: false };
+const state = { user: null, devices: [], batches: [], images: [], batch: null, busy: false, attempt: null };
 let toastTimer;
 function toast(text) {
   $('toast').textContent = text; $('toast').hidden = false;
@@ -11,7 +11,7 @@ async function api(path, options = {}) {
   try { response = await fetch(path, options); }
   catch { throw new Error('連線中斷，請稍後重試。'); }
   const data = await response.json().catch(() => ({ error: '伺服器回應異常，請稍後重試。' }));
-  if (!response.ok) throw new Error(data.error || '操作失敗');
+  if (!response.ok) throw Object.assign(new Error(data.error || '操作失敗'), {status:response.status});
   return data;
 }
 const json = data => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -83,6 +83,13 @@ $('loadModels').onclick = async () => {
   } catch(error) { errorBox.textContent = error.message; }
   finally { $('loadModels').disabled = false; }
 };
+$('renameChat').onclick = () => { if (!state.batch) return; $('renameTitle').value = $('chatTitle').textContent; $('renameForm').querySelector('.form-error').textContent=''; $('renameDialog').showModal(); };
+$('renameForm').onsubmit = async event => {
+  event.preventDefault(); const button=event.submitter;button.disabled=true;
+  try {const result=await api('/api/v1/chats/'+encodeURIComponent(state.batch)+'/title',json({title:$('renameTitle').value.trim()}));$('chatTitle').textContent=result.title;await loadHistory();$('renameDialog').close();}
+  catch(error){$('renameForm').querySelector('.form-error').textContent=error.message;}
+  finally{button.disabled=false;}
+};
 $('deviceBtn').onclick = () => {
   if (!requireUser()) return;
   $('devices').replaceChildren();
@@ -99,6 +106,7 @@ $('createDevice').onclick = async () => {
   finally { $('createDevice').disabled = false; }
 };
 function updateControls() {
+  $('renameChat').disabled = !state.batch || state.busy;
   $('sendBtn').disabled = state.busy || !state.images.length;
   $('pastePhotos').disabled = state.busy; $('attachBtn').disabled = state.busy; $('choosePhotos').disabled = state.busy;
   $('photoCount').textContent = state.images.length ? `${state.images.length} 張` : '';
@@ -106,10 +114,10 @@ function updateControls() {
 function clearImages() { state.images.forEach(item => URL.revokeObjectURL(item.url)); state.images = []; renderPreviews(); }
 function newChat() {
   if (state.busy) return toast('請先等待這次解題完成。');
-  clearImages(); clearTimeout(toastTimer); $('toast').hidden = true; state.batch = null; $('chatTitle').textContent = '新對話';
+  clearImages(); clearTimeout(toastTimer); $('toast').hidden = true; state.batch = null; state.attempt = null; $('chatTitle').textContent = '新對話';
   $('conversation').replaceChildren(emptyTemplate.cloneNode(true));
   $('conversation').querySelector('#emptyUpload').onclick = choose;
-  markActive(); closeMenu();
+  markActive(); closeMenu(); updateControls();
 }
 const emptyTemplate = $('emptyChat').cloneNode(true);
 $('newChat').onclick = newChat; $('newChatMobile').onclick = newChat;
@@ -279,27 +287,77 @@ function renderSolution(sheet, text, questions) {
   const print = document.createElement('button'); print.textContent = '列印'; print.onclick = () => window.print();
   buttons.append(copy, print); actions.append(caption, buttons); sheet.replaceChildren(body, actions);
 }
+function pendingKey() { return 'photo-pending-' + state.user.id; }
+function rememberTask(task) { try { localStorage.setItem(pendingKey(), JSON.stringify(task)); } catch {} }
+function forgetTask() { try { localStorage.removeItem(pendingKey()); } catch {} }
+async function waitForTask(id, loading) {
+  const started = Date.now(); let errors = 0;
+  while (Date.now() - started < 10 * 60 * 1000) {
+    try {
+      const task = await api('/api/v1/tasks/' + encodeURIComponent(id)); errors = 0;
+      if (task.status === 'completed') return task;
+      if (task.status === 'failed') throw Object.assign(new Error(task.error || '解題失敗'), {terminal:true});
+      loading.textContent = task.status === 'queued' ? '照片已保存，正在排隊解題…' : '正在解題與整理解答…';
+    } catch (error) {
+      if (error.terminal) throw error;
+      errors++; loading.textContent = '暫時連線中斷，正在重新查詢進度…';
+      if (errors >= 5) throw new Error('暫時無法取得進度，工作已保存，重新整理可接續查詢。');
+    }
+    await new Promise(resolve => setTimeout(resolve, Date.now() - started > 30000 ? 5000 : 3000));
+  }
+  throw new Error('工作仍在背景處理，重新整理可接續查詢。');
+}
+async function taskAnswers(task, sheet) {
+  const questions = []; let cursor = '';
+  do {
+    const page = await api('/api/v1/chats/' + encodeURIComponent(task.chat_id) + '/records?format=web&limit=20&task_id=' + encodeURIComponent(task.task_id) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+    questions.push(...page.items); cursor = page.has_more ? page.next_cursor : '';
+    $('chatTitle').textContent = page.title;
+  } while (cursor);
+  const text = questions.map(q => '(' + q.number + ')\n題目：' + q.question + '\n解：' + q.solution + '\n答案：' + (q.answer || '待確認')).join('\n\n');
+  renderSolution(sheet, text, questions); forgetTask();
+}
 $('sendBtn').onclick = async () => {
   if (state.busy || !state.images.length || !requireUser()) return;
   if (!state.user.has_api_key) { $('settingsDialog').showModal(); return; }
   const selected = [...state.images];
-  state.busy = true; renderPreviews();
-  $('emptyChat')?.remove();
+  if (!state.attempt || state.attempt.files.length !== selected.length || !state.attempt.files.every((f,i)=>f===selected[i].file)) {
+    state.attempt = {id:crypto.randomUUID(), chat:state.batch, files:selected.map(f=>f.file)};
+  }
+  state.busy = true; renderPreviews(); $('emptyChat')?.remove();
   const userMessage = photoMessage(selected, state.batch ? '補充照片' : '題目照片', state.batches.find(b => b.id === state.batch)?.photos.length || 0);
-  const sheet = createAssistant(); const loading = document.createElement('div'); loading.className = 'loading'; loading.textContent = '正在辨識題目並整理解答…'; sheet.append(loading); scrollBottom();
+  const sheet = createAssistant(); const loading = document.createElement('div'); loading.className = 'loading'; loading.textContent = '正在上傳並保存照片…'; sheet.append(loading); scrollBottom();
   try {
-    const form = new FormData(); if (state.batch) form.append('batch_id', state.batch);
+    const form = new FormData(); form.append('upload_id', state.attempt.id); if (state.attempt.chat) form.append('chat_id', state.attempt.chat);
     selected.forEach(item => form.append('images[]', item.file));
-    const result = await api('/api/solve', { method: 'POST', body: form });
-    state.batch = result.batch_id; renderSolution(sheet, result.reply, result.questions); clearImages();
-    await loadHistory().catch(error => toast(error.message));
-    const batch = state.batches.find(batch => batch.id === state.batch); $('chatTitle').textContent = batch?.prompt || '照片解題';
-  } catch (error) {
-    sheet.className = 'error-message'; sheet.textContent = `${error.message} 照片已保留，可重新送出。`;
-    const retry = document.createElement('button'); retry.textContent = '重新送出'; retry.onclick = () => { if (state.busy) return; sheet.parentElement.remove(); userMessage.remove(); $('sendBtn').click(); };
-    sheet.append(retry);
-  } finally { state.busy = false; renderPreviews(); scrollBottom(); }
+    let task = await api('/api/v1/uploads', {method:'POST',body:form});
+    state.batch = task.chat_id; rememberTask(task);
+    if (task.status === 'failed') task = await api('/api/v1/tasks/' + task.task_id + '/retry', json({}));
+    const finished = await waitForTask(task.task_id, loading); await taskAnswers(finished, sheet);
+    clearImages(); state.attempt = null; await loadHistory().catch(error=>toast(error.message));
+  } catch(error) {
+    sheet.className = 'error-message'; sheet.textContent = error.message + ' 照片已保留；重試會沿用同一個上傳編號。';
+    const retry = document.createElement('button'); retry.textContent = '重新送出／查詢'; retry.onclick=()=>{if(state.busy)return;sheet.parentElement.remove();userMessage.remove();$('sendBtn').click();};sheet.append(retry);
+  } finally {state.busy=false;renderPreviews();scrollBottom();}
 };
+async function resumePending() {
+  if (!state.user) return;
+  let task; try { task = JSON.parse(localStorage.getItem(pendingKey()) || 'null'); } catch {return;}
+  if (!task) return;
+  let current;
+  try { current = await api('/api/v1/tasks/' + encodeURIComponent(task.task_id)); }
+  catch(error) { if (error.status === 404) {forgetTask();return;} throw error; }
+  const batch = state.batches.find(b=>b.id===task.chat_id); if (!batch) return;
+  if (current.status === 'completed') { readBatch(batch); forgetTask(); return; }
+  readBatch(batch); state.busy=true; updateControls();
+  const sheet=createAssistant(), loading=document.createElement('div');loading.className='loading';sheet.append(loading);
+  try {const finished=await waitForTask(task.task_id,loading);await taskAnswers(finished,sheet);await loadHistory();}
+  catch(error) {
+    sheet.className='error-message';sheet.textContent=error.message;
+    const retry=document.createElement('button');retry.textContent='重新查詢／重試工作';
+    retry.onclick=async()=>{if(state.busy)return;try{const current=await api('/api/v1/tasks/'+task.task_id);if(current.status==='failed')await api('/api/v1/tasks/'+task.task_id+'/retry',json({}));await resumePending();}catch(e){toast(e.message);}};sheet.append(retry);
+  } finally {state.busy=false;updateControls();scrollBottom();}
+}
 function markActive() { document.querySelectorAll('.history-item').forEach(button => button.classList.toggle('active', button.dataset.batch === state.batch)); }
 async function loadHistory() {
   const data = await api('/api/history'); state.batches = data.batches || []; $('historyList').replaceChildren();
@@ -316,7 +374,7 @@ function readBatch(batch) {
   if (batch.photos.length) photoMessage(batch.photos.map(photo => ({ url: '/api/uploads/' + encodeURIComponent(photo.filename) })));
   const replies = batch.messages.filter(message => message.role === 'model');
   replies.forEach(message => renderSolution(createAssistant(), message.content, message.questions));
-  if (!replies.length) { const p = document.createElement('p'); p.className = 'error-message'; p.textContent = batch.status === 'solving' ? '這次解題仍在處理，稍後可重新打開。' : '此題尚未完成解答，請重新上傳照片。'; $('conversation').append(p); }
-  markActive(); closeMenu(); scrollBottom();
+  if (!replies.length) { const p = document.createElement('p'); p.className = 'error-message'; p.textContent = ['solving','queued'].includes(batch.status) ? '這次解題仍在處理，稍後可重新打開。' : '此題尚未完成解答，請重新上傳照片。'; $('conversation').append(p); }
+  markActive(); closeMenu(); updateControls(); scrollBottom();
 }
-refreshUser().catch(error => toast(error.message));
+refreshUser().then(resumePending).catch(error => toast(error.message));

@@ -16,7 +16,7 @@ class PhotoController:
         return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @staticmethod
-    def save_photo(file_storage, batch_id):
+    def save_photo(file_storage, batch_id, commit=True):
         """
         儲存上傳的檔案至磁碟並寫入 Photo 資料表記錄
         """
@@ -52,5 +52,8 @@ class PhotoController:
             file_size=file_size
         )
         db.session.add(photo)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
         return photo

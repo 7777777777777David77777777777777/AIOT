@@ -19,13 +19,13 @@ ESP32 平常為一般計算機。觸發指定操作後進入 AI 模式，以固�
 ```text
 瀏覽器 HTML/CSS/JavaScript
   → PHP 頁面及 API 轉送（本機 5000）
-  → Python Flask API（本機 127.0.0.1:5001）
+  → Uvicorn + FastAPI API（本機 127.0.0.1:5001，保留 Flask 相容層）
       ├─ 本機 SQLite：exam_solver.db
       ├─ uploads/ 原始照片
       └─ Gemini generateContent
 ```
 
-目標架構（FastAPI、工作程序、ESP32 韌體尚待實作）：
+目前架構（FastAPI 與獨立 worker 已實作；ESP32 韌體尚待實作）：
 
 ```text
 瀏覽器 → PHP → FastAPI ───────────┐
@@ -76,7 +76,7 @@ Gemini API Key 不送到 ESP32。FastAPI 遷移不代表解題品質會自動提
 - 準備拍照 → 拍攝 → 確認／重拍 → API 上傳。實體鍵映射仍待硬體確認。
 - 新考試取消回清單，不留下空紀錄；追加取消回原本答案畫面。
 
-## 5. 新考試與追加照片的 API 流程（規劃）
+## 5. 新考試與追加照片的 API 流程（後端已實作）
 
 ```text
 拍攝、確認
@@ -104,9 +104,9 @@ Gemini API Key 不送到 ESP32。FastAPI 遷移不代表解題品質會自動提
 
 chat_id 是整場考試 ID；task_id 是本次解題工作 ID。每次上傳可有新的 task_id。
 task_id 只查進度；答案一律由聊天室紀錄 API 取得，新舊紀錄共用同一路徑。
-API 的實際路徑與錯誤格式在 FastAPI 實作前固定；上面欄位是已確認的流程需求。
+實際路徑與參數見 [API.md](API.md)；互動規格為 /api/docs。
 
-## 6. 輪詢、失敗與重試（規劃）
+## 6. 輪詢、失敗與重試（後端已實作）
 
 - 每 3 秒查詢一次；超過 30 秒改每 5 秒，網路失敗再延長間隔。
 - 查狀態不重新上傳，不再次呼叫 Gemini。
@@ -119,7 +119,7 @@ API 的實際路徑與錯誤格式在 FastAPI 實作前固定；上面欄位是�
 - 「答案待確認／照片需補拍」是解題結果，不代表工作仍在執行；應為終止輪詢的狀態。
 - 持久任務的領取、重啟復原、逾時、重試及多程序鎖定仍待設計實作。
 
-## 7. 聊天室命名（規劃）
+## 7. 聊天室命名（已實作）
 
 第一張照片辨識完成後，僅自動命名一次：
 
@@ -128,10 +128,9 @@ API 的實際路徑與錯誤格式在 FastAPI 實作前固定；上面欄位是�
 3. 無法判斷科目：「2026-10-16 未分類」，不可自行猜名稱。
 
 先回傳 ID，命名可隨第一張照片解題完成後更新。後續照片不自動改名。
-規劃將 title 獨立於 prompt，網頁提供手動改名。
-目前程式仍用第一題內容覆寫 QuestionBatch.prompt，不代表此命名規則已完成。
+chat_metadata 獨立保存名稱與手動命名旗標；網頁已提供改名。原 prompt 同步名稱供舊紀錄相容。
 
-## 8. ESP32 紀錄回應（規劃）
+## 8. ESP32 紀錄回應（API 已實作，韌體待接）
 
 裝置只需要照片編號、照片清晰度、模型自評信心、原題號、答案、解說與查核狀態。
 不用下載原照片，不需題目全文；分頁讀取，不一次載入所有解答。
@@ -185,7 +184,7 @@ B：6 V
 - 「解」保留玫紅色塊，答案粗體與分隔線。
 - 清晰度＋答案信心徽章；查核狀態與自評分數分開。
 - 每張最多 20 MiB、每次最多 8 張、每次照片合計 120 MiB，不累計先前照片額度。
-- PHP/Flask 請求上限 128 MiB 預留 multipart 空間；PHP 用暫存檔串流轉送。
+- PHP/FastAPI 請求上限 128 MiB 預留 multipart 空間；PHP 用暫存檔串流轉送。
 - 原圖保存；模型副本長邊最多 3200 像素，另限制 JPEG 大小。
 - 2500 萬像素防護仍存在，不是所有小於 20 MiB 的巨大解析度影像都接受。
 - 同一對話新照片接續編號；解題不把歷史所有原圖反覆送出。
@@ -194,36 +193,39 @@ B：6 V
 ## 11. 資料庫與現有檔案
 
 目前資料表：users、devices、question_batches、photos、messages、
-model_connections、admin_roles、admin_audit。
+model_connections、admin_roles、admin_audit、chat_metadata、solve_tasks。
 
 - question_batches 是目前聊天室／考試容器，id 為目前 batch_id。
 - photos 保存檔案路徑與歸屬；messages 保存對話及答案。
 - messages.content 的 model 訊息保存 answer_sheet_v1 JSON，不是每次另寫 JSON 檔。
 - Gemini 原始回應目前未自動持久化；debug/latest_saved_answer.json 是手動匯出的快照。
-- FastAPI 需新增獨立 tasks、upload_id 等資料模型及遷移；尚未完成。
+- 已新增 solve_tasks、chat_metadata；create_all 只增加新表，不改舊欄位。版本化資料遷移尚待補。
 - 現有 /api/tasks/<task_id>/status 參數實際查的是 QuestionBatch ID，
   不能當作已有獨立任務表；需在遷移時處理相容性。
 
 ## 12. 開發與部署
 
 - 開發資料先留本機 SQLite，不把本機會員與照片自動搬雲端。
-- Render Docker/Apache/Gunicorn 與 Postgres Blueprint 已準備；不等於已上線。
+- Render Docker/Apache/Uvicorn/worker 與 Postgres Blueprint 已準備；不等於已上線。
 - 雲端 Postgres 由 DATABASE_URL 注入；RENDER=true 時缺少連線會拒絕臨時 SQLite fallback。
 - Render 免費 Postgres 30 天期限（2026-10-16 查證），建立前再確認官方規定。
 - 網站臨時檔案可能在休眠／重啟／部署後消失。使用者已決定暫不接 Google Drive，
   照片僅供檢查，接受其暫存性；帳號與答案由 Postgres 保存。
-- FastAPI 開發先在本機，尚未遷移 Flask；獨立工作程序亦尚未實作。
+- 原生 FastAPI 負責 v1 上傳／任務／聊天室／紀錄；Flask 保留登入、模型、管理員等相容功能。獨立 worker 已實作。
 - 程式儲存庫：https://github.com/7777777777777David77777777777777/AIOT
-- develop 為開發分支；mester 為既有部署分支（名稱確實是 mester）；main 保留。
-- 最新已推送 develop：2947664。mester 尚未包含全部近期開發改動。
-- 不因更新文件而自動合併或推送 mester；發布須依使用者當次授權。
+- develop 為開發分支；main 為部署分支；mester 已刪除。不得自動更新 main。
 
-## 13. 下一步順序
+## 13. 任務與測試實作
 
-1. 固定裝置 API 路徑、請求／回應、分頁、錯誤碼與狀態表。
-2. 設計 chat title、獨立 task、upload_id 與資料庫遷移。
-3. 在 develop 建立 FastAPI，先沿用本機 SQLite 並與 PHP 做相容測試。
-4. 實作 UID → 考試清單 → 上傳 → 查工作 → 讀紀錄的整套整合測試。
-5. 加入可恢復工作程序、防重複上傳、斷線及重啟測試。
-6. 再接 ESP32 C++ 狀態機與 Game Boy 介面，最後驗證實機照片與顯示。
-7. 解題品質建立有標準答案的測試集，再逐步加入來源查證與驗算工具。
+- upload_id 在會員內唯一，相同內容重送沿用任務；不同內容拒絕。檔案錯誤回滾本次新增資料。
+- 原子領取任務，同聊天室同時只解一份；running 租約10分鐘，過期可重排，最多嘗試3次。
+- 模型呼叫不持有資料庫鎖；提交時核對租約，答案及完成狀態一起提交。
+- 可以避免重複保存結果；重啟恢復仍可能重複呼叫模型並產生額外用量。
+- needs_review／needs_recapture 是終態結果，不應無限輪詢。
+- 網頁已改為上傳→輪詢→讀紀錄，保存 pending task 供重新整理接續。
+- 裝置公式只做基本純文字轉換，尚非完整 LaTeX 引擎。
+- 測試與限制見 [TEST_REPORT.md](TEST_REPORT.md)。
+
+## 14. 下一步
+
+ESP32 C++ 狀態機與實機顯示、標準答案品質測試集、真實 Postgres／Docker／Render 壓力測試、版本化資料遷移。
