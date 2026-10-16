@@ -67,6 +67,22 @@ class SystemTests(unittest.TestCase):
         self.assertEqual(self.a.post('/api/solve', data={'prompt': '只傳文字'}).status_code, 400)
         self.assertEqual(self.a.post('/api/solve', data={}).status_code, 400)
 
+    def test_photo_limit_is_per_request_and_source_indices_stay_correct(self):
+        answer={'questions':[dict(number='1',question='求值',clarity='clear',photo_indices=[1],solution='計算得 2',answer='2',unclear_reason='',recapture_hint='',confidence=90)]}
+        reply=Mock(status_code=200)
+        reply.json.return_value={'candidates':[{'content':{'parts':[{'text':json.dumps(answer)}]}}]}
+        with patch('app.controllers.solver_controller.requests.post',return_value=reply) as post:
+            first=self.a.post('/api/solve',data={'images[]':[(self.photo(),f'{i}.jpg') for i in range(8)]})
+            self.assertEqual(first.status_code,200)
+            bid=first.json['batch_id']
+            second=self.a.post('/api/solve',data={'batch_id':bid,'images[]':(self.photo(),'ninth.jpg')})
+            self.assertEqual(second.status_code,200)
+            self.assertEqual(second.json['questions'][0]['photo_indices'],[9])
+            parts=post.call_args.kwargs['json']['contents'][-1]['parts']
+            self.assertEqual(sum('inline_data' in p for p in parts),1)
+            too_many=self.a.post('/api/solve',data={'batch_id':bid,'images[]':[(self.photo(),f'{i}.jpg') for i in range(9)]})
+            self.assertEqual(too_many.status_code,400)
+
     def test_solve_and_failure(self):
         reply=Mock(status_code=200);reply.json.return_value={'candidates':[{'content':{'parts':[{'text':json.dumps({'questions':[{'number':'第 1 題','question':'二次方程式','clarity':'clear','photo_indices':[1],'solution':'因式分解得 $x=2$。','answer':'2','unclear_reason':'','recapture_hint':''}]}, ensure_ascii=False)}]}}]}
         with patch('app.controllers.photo_controller.Config.UPLOAD_FOLDER',self.temp.name),patch('app.controllers.solver_controller.requests.post',return_value=reply):

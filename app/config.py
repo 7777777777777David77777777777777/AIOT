@@ -32,7 +32,7 @@ class Config:
     
     # 圖片上傳目錄
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", os.path.join(DATA_DIR, "uploads"))
-    MAX_CONTENT_LENGTH = 32 * 1024 * 1024  # 32MB max upload
+    MAX_CONTENT_LENGTH = 128 * 1024 * 1024  # 120 MiB photos + multipart overhead
     
     # 預設 VLM 設定
     DEFAULT_MODEL = "gemini-2.5-flash"

@@ -24,3 +24,13 @@ body,button,input,textarea,select{font-family:var(--site-font)}
 .question-solution .field-label{background:none;color:inherit;text-align:left;height:auto;width:auto;line-height:inherit;font-size:inherit}
 .question-answer{border-top:0;padding-top:0}.question-answer .field-content{font-weight:700}
 .question-card + .question-card{margin-top:25px;padding-top:22px}.solution-body{line-height:1.85}
+
+/* Compact answer-sheet rows: numbered prompt, solution, then answer. */
+.question-header{justify-content:flex-end;margin:0 0 10px}
+.question-field{display:grid;grid-template-columns:4.5em minmax(0,1fr);gap:12px;margin:14px 0;align-items:start}
+.question-field .field-label{display:block;margin:0;font-weight:700;line-height:1.85;white-space:nowrap}
+.question-solution .field-label{display:inline-block;background:#a33558;color:#fff;text-align:center;width:28px;min-height:28px;font-size:16px;line-height:28px;margin-top:2px}
+.question-answer{border-top:1px solid #eddde2;padding-top:15px;margin-top:17px;font-weight:700}
+@media(max-width:760px){.question-field{grid-template-columns:4.2em minmax(0,1fr);gap:9px}}
+
+.question-header{justify-content:space-between;margin:4px 0 12px}.question-number{font-size:18px;font-weight:700;color:var(--ink);line-height:1.5}

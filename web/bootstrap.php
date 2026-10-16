@@ -1,7 +1,7 @@
 <?php
 // PHP owns page flow. Authentication, persistence, and AI calls stay in Python.
 declare(strict_types=1);
-const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 128 * 1024 * 1024;
 function escape_html(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function web_session(): void {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -15,7 +15,7 @@ function page_headers(): void {
     header('Cache-Control: no-store'); header('X-Content-Type-Options: nosniff'); header('X-Frame-Options: DENY');
     header('Content-Type: text/html; charset=utf-8');
 }
-function backend_request(string $path, string $method = 'GET', string $body = '', string $contentType = 'application/json'): array {
+function backend_request(string $path, string $method = 'GET', $body = '', string $contentType = 'application/json'): array {
     $base = rtrim(getenv('PYTHON_API_URL') ?: 'http://127.0.0.1:5001', '/');
     $curl = curl_init($base . $path);
     $headers = ['Accept: application/json', 'Host: ' . ($_SERVER['HTTP_HOST'] ?? '127.0.0.1')];
@@ -34,7 +34,14 @@ function backend_request(string $path, string $method = 'GET', string $body = ''
             if (count($parts) === 2) $responseHeaders[strtolower(trim($parts[0]))][] = trim($parts[1]);
             return strlen($line);
         }]);
-    if ($method !== 'GET') curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+    if ($method !== 'GET') {
+        if (is_resource($body)) {
+            curl_setopt($curl, CURLOPT_UPLOAD, true);
+            curl_setopt($curl, CURLOPT_INFILE, $body);
+            curl_setopt($curl, CURLOPT_INFILESIZE, fstat($body)['size']);
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+        } else curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+    }
     $result = curl_exec($curl); $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
     curl_close($curl);
     if ($result === false || !$status) return [502, ['content-type' => ['application/json']], json_encode(['error' => 'Python 後端未連線，請使用 run.bat 啟動整套系統。'], JSON_UNESCAPED_UNICODE)];
@@ -50,7 +57,7 @@ function json_error(string $message, int $status): never {
 function proxy_api(string $uri): never {
     $method = $_SERVER['REQUEST_METHOD'];
     if (!in_array($method, ['GET', 'POST'], true)) json_error('不支援此操作', 405);
-    if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > MAX_UPLOAD_BYTES) json_error('上傳總量不可超過 32 MB', 413);
+    if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > MAX_UPLOAD_BYTES) json_error('上傳總量過大，照片總大小不可超過 120 MB', 413);
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
     $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
     if ($origin && $origin !== $scheme . '://' . $_SERVER['HTTP_HOST']) json_error('不接受跨網站操作', 403);
@@ -62,26 +69,37 @@ function proxy_api(string $uri): never {
     $type = $_SERVER['CONTENT_TYPE'] ?? 'application/json'; $body = '';
     if (str_starts_with($type, 'multipart/form-data')) {
         $boundary = 'photo_' . bin2hex(random_bytes(18));
+        $body = tmpfile();
+        if ($body === false) json_error('無法建立上傳暫存檔', 503);
+        $totalPhotoBytes = 0; $photoCount = 0;
         foreach ($_POST as $name => $value) {
             if (!is_scalar($value)) continue;
-            $body .= '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"" . preg_replace('/[^a-zA-Z0-9_]/', '', $name) . "\"\r\n\r\n" . $value . "\r\n";
+            fwrite($body, '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"" . preg_replace('/[^a-zA-Z0-9_]/', '', $name) . "\"\r\n\r\n" . $value . "\r\n");
         }
         foreach ($_FILES as $field => $info) {
             $names = is_array($info['name']) ? $info['name'] : [$info['name']];
             foreach ($names as $i => $original) {
                 $error = is_array($info['error']) ? $info['error'][$i] : $info['error'];
-                if ($error !== UPLOAD_ERR_OK) json_error('照片上傳失敗，請確認每張不超過 8 MB', 400);
+                if ($error !== UPLOAD_ERR_OK) json_error('照片上傳失敗，請確認每張不超過 20 MB', 400);
                 $tmp = is_array($info['tmp_name']) ? $info['tmp_name'][$i] : $info['tmp_name'];
                 if (!is_uploaded_file($tmp)) json_error('無效的上傳檔案', 400);
+                $size = filesize($tmp); $totalPhotoBytes += $size; $photoCount++;
+                if ($size > 20 * 1024 * 1024) json_error('單張圖片不可超過 20 MB', 400);
+                if ($totalPhotoBytes > 120 * 1024 * 1024) json_error('本次照片總大小不可超過 120 MB', 400);
+                if ($photoCount > 8) json_error('每次最多送出 8 張照片', 400);
                 $name = preg_replace('/[^a-zA-Z0-9_.-]/', '_', basename($original));
                 $fieldName = preg_replace('/[^a-zA-Z0-9_]/', '', $field);
                 $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
-                $body .= '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"$fieldName\"; filename=\"$name\"\r\nContent-Type: $mime\r\n\r\n" . file_get_contents($tmp) . "\r\n";
+                fwrite($body, '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"$fieldName\"; filename=\"$name\"\r\nContent-Type: $mime\r\n\r\n");
+                $source = fopen($tmp, 'rb');
+                if ($source === false) json_error('無法讀取上傳照片', 400);
+                stream_copy_to_stream($source, $body); fclose($source); fwrite($body, "\r\n");
             }
         }
-        $body .= '--' . $boundary . "--\r\n"; $type = 'multipart/form-data; boundary=' . $boundary;
+        fwrite($body, '--' . $boundary . "--\r\n"); rewind($body); $type = 'multipart/form-data; boundary=' . $boundary;
     } else { $body = file_get_contents('php://input'); }
     [$status, $headers, $data] = backend_request($uri, $method, $body, $type);
+    if (is_resource($body)) fclose($body);
     http_response_code($status); forward_cookies($headers);
     header('Content-Type: ' . ($headers['content-type'][0] ?? 'application/json'));
     header('Cache-Control: no-store'); header('X-Content-Type-Options: nosniff'); header('X-Frame-Options: DENY');

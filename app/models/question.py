@@ -13,7 +13,7 @@ class QuestionBatch(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 關聯
-    photos = db.relationship("Photo", backref="batch", cascade="all, delete-orphan", lazy=True)
+    photos = db.relationship("Photo", backref="batch", cascade="all, delete-orphan", lazy=True, order_by="Photo.created_at")
     messages = db.relationship("Message", backref="batch", cascade="all, delete-orphan", lazy=True, order_by="Message.created_at")
 
     def to_dict(self):

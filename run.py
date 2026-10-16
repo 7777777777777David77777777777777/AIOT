@@ -28,8 +28,8 @@ def main():
     env = os.environ.copy(); env['PYTHON_API_URL'] = 'http://127.0.0.1:' + str(api_port)
     # PHP session files belong to this project and are excluded from version control.
     sessions = BASE_DIR / '.runtime' / 'sessions'; sessions.mkdir(parents=True, exist_ok=True)
-    command = [php, '-d', 'session.save_path=' + str(sessions), '-d', 'upload_max_filesize=8M',
-               '-d', 'post_max_size=32M', '-d', 'max_file_uploads=8', '-S', host + ':' + str(port),
+    command = [php, '-d', 'session.save_path=' + str(sessions), '-d', 'upload_max_filesize=20M',
+               '-d', 'post_max_size=128M', '-d', 'max_file_uploads=16', '-S', host + ':' + str(port),
                '-t', str(BASE_DIR / 'web'), str(BASE_DIR / 'web' / 'router.php')]
     process = None
     try:

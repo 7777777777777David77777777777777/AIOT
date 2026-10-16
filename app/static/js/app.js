@@ -106,7 +106,7 @@ function updateControls() {
 function clearImages() { state.images.forEach(item => URL.revokeObjectURL(item.url)); state.images = []; renderPreviews(); }
 function newChat() {
   if (state.busy) return toast('請先等待這次解題完成。');
-  clearImages(); state.batch = null; $('chatTitle').textContent = '新對話';
+  clearImages(); clearTimeout(toastTimer); $('toast').hidden = true; state.batch = null; $('chatTitle').textContent = '新對話';
   $('conversation').replaceChildren(emptyTemplate.cloneNode(true));
   $('conversation').querySelector('#emptyUpload').onclick = choose;
   markActive(); closeMenu();
@@ -117,15 +117,17 @@ function choose() { if (!state.busy) $('fileInput').click(); }
 $('attachBtn').onclick = choose; $('choosePhotos').onclick = choose; $('emptyUpload').onclick = choose;
 function addFiles(files) {
   if (state.busy) return;
-  let invalid = false;
+  const errors = new Set();
   for (const raw of files) {
     const file = PhotoInput.normalize(raw);
-    if (!file) { invalid = true; continue; }
+    if (!file) { errors.add('圖片格式不支援，請使用 JPG、PNG 或 WebP。'); continue; }
     const total = state.images.reduce((sum, item) => sum + item.file.size, 0);
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8388608 || state.images.length >= 8 || total + file.size > 30 * 1024 * 1024) { invalid = true; continue; }
+    if (file.size > 20971520) { errors.add('單張圖片超過 20 MB，請縮小後再加入。'); continue; }
+    if (state.images.length >= 8) { errors.add('本次待送出照片已達 8 張，請先送出或移除照片。'); continue; }
+    if (total + file.size > 120 * 1024 * 1024) { errors.add('本次照片總大小超過 120 MB。'); continue; }
     state.images.push({ file, url: URL.createObjectURL(file) });
   }
-  if (invalid) toast('最多 8 張圖片，每張 8 MB，總計不超過 30 MB。');
+  if (errors.size) toast([...errors].join(' '));
   renderPreviews();
 }
 $('fileInput').onchange = event => { addFiles([...event.target.files]); event.target.value = ''; };
@@ -187,13 +189,13 @@ $('pastePhotos').onclick = async () => {
   }
 };
 function scrollBottom() { $('conversation').scrollTop = $('conversation').scrollHeight; }
-function photoMessage(photos, label = '題目照片') {
+function photoMessage(photos, label = '題目照片', offset = 0) {
   const message = document.createElement('section'); message.className = 'message user';
   const meta = document.createElement('div'); meta.className = 'message-meta'; meta.textContent = '你';
   const images = document.createElement('div'); images.className = 'user-photos';
   photos.forEach((photo, index) => {
-    const button = document.createElement('button'); button.setAttribute('aria-label', `查看照片 ${index + 1}`);
-    const img = document.createElement('img'); img.src = photo.url; img.alt = `題目照片 ${index + 1}`;
+    const button = document.createElement('button'); button.setAttribute('aria-label', `查看照片 ${offset + index + 1}`);
+    const img = document.createElement('img'); img.src = photo.url; img.alt = `題目照片 ${offset + index + 1}`;
     // Keep independent object URLs for chat images after clearing upload previews.
     if (photo.file) { img.src = URL.createObjectURL(photo.file); img.onload = () => URL.revokeObjectURL(img.src); }
     button.onclick = () => { $('fullImage').src = photo.file ? URL.createObjectURL(photo.file) : photo.url; $('imageDialog').showModal(); };
@@ -238,9 +240,14 @@ function renderSolution(sheet, text, questions) {
 
       const card = document.createElement('article'); card.className = 'question-card';
       const header = document.createElement('div'); header.className = 'question-header';
-      const number = document.createElement('h4'); const subnumber = q.number.match(/(?:[、.．]\s*|第\s*)([0-9]+)(?:\s*題)?$/)?.[1] || q.number; number.textContent = '題目' + subnumber;
+      const cleanNumber = String(q.number).trim().replace(/^[（(]+|[）)]+$/g, '');
+      const subnumber = cleanNumber.match(/(?:[、.．]\s*|第\s*)([0-9]+)(?:\s*題)?$/)?.[1] || cleanNumber;
       const clarity = document.createElement('span'); clarity.className = 'clarity ' + (q.clarity === 'clear' ? 'clear' : 'unclear');
-      clarity.textContent = q.clarity === 'clear' ? '辨識清楚' : '需補拍'; header.append(number, clarity);
+      const confidence = Number.isInteger(q.confidence) && q.confidence >= 0 && q.confidence <= 100 ? q.confidence + '%' : '未提供';
+      clarity.textContent = (q.clarity === 'clear' ? '照片清楚' : '照片需補拍') + ' · 答案信心：' + confidence + (q.answer_status === 'needs_review' ? ' · 待確認' : '');
+      clarity.title = '答案信心由模型自行回報，不代表實際答對率，也不會取代查核結果。';
+      if (q.answer_status === 'needs_review') clarity.classList.add('unclear');
+      const number = document.createElement('strong'); number.className = 'question-number'; number.textContent = '(' + subnumber + ')'; header.append(number, clarity);
       card.append(header);
       const field = (label, value, className) => {
         const row = document.createElement('div'); row.className = 'question-field ' + className;
@@ -251,10 +258,14 @@ function renderSolution(sheet, text, questions) {
         content.append(...holder.querySelector('.solution-body').childNodes);
         if (label) row.append(title); row.append(content); card.append(row);
       };
-      field('', q.question, 'question-prompt');
+      field('題目', q.question, 'question-prompt');
       if (q.clarity === 'clear') {
-        field('解', q.solution, 'question-solution'); field('答案', q.answer, 'question-answer');
+        field('解', q.solution || '尚無解題說明', 'question-solution');
+        field('答案', q.answer_status === 'needs_review' ? '待確認' : q.answer, 'question-answer');
+        if (q.review_note) field('查核', q.review_note, 'question-unclear');
+        if (q.count_checks?.length) field('計數', q.count_checks.map(item => '候選引文「' + item.text + '」：' + item.count + ' 字（不含標點；引文來源仍待核對）。').join('\n\n'), 'question-checks');
       } else {
+        field('答案', '無法作答：照片不清楚', 'question-answer');
         field('原因', q.unclear_reason, 'question-unclear'); field('補拍', q.recapture_hint, 'question-unclear');
         const retry = document.createElement('button'); retry.className = 'recapture-button'; retry.textContent = '上傳補拍照片'; retry.onclick = choose; card.append(retry);
       }
@@ -274,7 +285,7 @@ $('sendBtn').onclick = async () => {
   const selected = [...state.images];
   state.busy = true; renderPreviews();
   $('emptyChat')?.remove();
-  const userMessage = photoMessage(selected, state.batch ? '補充照片' : '題目照片');
+  const userMessage = photoMessage(selected, state.batch ? '補充照片' : '題目照片', state.batches.find(b => b.id === state.batch)?.photos.length || 0);
   const sheet = createAssistant(); const loading = document.createElement('div'); loading.className = 'loading'; loading.textContent = '正在辨識題目並整理解答…'; sheet.append(loading); scrollBottom();
   try {
     const form = new FormData(); if (state.batch) form.append('batch_id', state.batch);

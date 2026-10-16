@@ -25,9 +25,9 @@ class PhotoController:
 
         if not PhotoController.is_allowed_file(file_storage.filename):
             raise ValueError("僅接受 JPG、PNG、WebP 圖片")
-        data = file_storage.read(8 * 1024 * 1024 + 1)
-        if len(data) > 8 * 1024 * 1024:
-            raise ValueError("單張圖片不可超過 8 MB")
+        data = file_storage.read(20 * 1024 * 1024 + 1)
+        if len(data) > 20 * 1024 * 1024:
+            raise ValueError("單張圖片不可超過 20 MB")
         try:
             with Image.open(BytesIO(data)) as image:
                 if image.width * image.height > 25000000:

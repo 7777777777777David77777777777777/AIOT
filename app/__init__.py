@@ -20,7 +20,7 @@ def create_app(config_class=Config):
     # 註冊外掛套件
     @flask_app.errorhandler(413)
     def too_large(error):
-        return jsonify(error="上傳總量不可超過 32 MB"), 413
+        return jsonify(error="上傳總量過大，照片總大小不可超過 120 MB"), 413
 
     @flask_app.errorhandler(ValueError)
     def invalid_input(error):

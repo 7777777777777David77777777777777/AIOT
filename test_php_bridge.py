@@ -27,7 +27,7 @@ class PHPBridgeTests(unittest.TestCase):
         self.api=make_server('127.0.0.1',self.api_port,self.app,threaded=True)
         self.thread=threading.Thread(target=self.api.serve_forever,daemon=True);self.thread.start()
         env=os.environ.copy();env['PYTHON_API_URL']='http://127.0.0.1:'+str(self.api_port)
-        self.php=subprocess.Popen([str(PHP),'-d','session.save_path='+self.tmp.name,'-S','127.0.0.1:'+str(self.web_port),'-t',str(ROOT/'web'),str(ROOT/'web'/'router.php')],cwd=PHP.parent,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        self.php=subprocess.Popen([str(PHP),'-d','upload_max_filesize=20M','-d','post_max_size=128M','-d','max_file_uploads=16','-d','session.save_path='+self.tmp.name,'-S','127.0.0.1:'+str(self.web_port),'-t',str(ROOT/'web'),str(ROOT/'web'/'router.php')],cwd=PHP.parent,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         self.base='http://127.0.0.1:'+str(self.web_port);self.client=requests.Session()
         for _ in range(100):
             try:
@@ -68,6 +68,9 @@ class PHPBridgeTests(unittest.TestCase):
         self.assertEqual(self.client.post(self.base+'/api/auth/apikey',headers=headers,json={'api_key':'fixture-only'}).status_code,200)
         image=io.BytesIO();Image.new('RGB',(30,30),'white').save(image,'PNG');data=image.getvalue()
         reply=Mock(status_code=200);reply.json.return_value={'candidates':[{'content':{'parts':[{'text':json.dumps({'questions':[{'number':'第 1 題','question':'二次方程式','clarity':'clear','photo_indices':[1],'solution':'因式分解得 $x=2$。','answer':'2','unclear_reason':'','recapture_hint':''}]}, ensure_ascii=False)}]}}]}
+        large_data=data + b'\0' * (9 * 1024 * 1024)
+        large=self.client.post(self.base+'/api/upload',headers=headers,files={'photo':('large.png',large_data,'image/png')})
+        self.assertEqual(large.status_code,200,large.text[:200])
         with patch('app.controllers.solver_controller.requests.post',return_value=reply):
             response=self.client.post(self.base+'/api/solve',headers=headers,files=[('images[]',('page1.png',data,'image/png')),('images[]',('page2.png',data,'image/png'))])
         self.assertEqual(response.status_code,200,response.text)

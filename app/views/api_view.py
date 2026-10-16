@@ -110,8 +110,18 @@ def solve():
         return jsonify({"error": "請加入照片後再送出"}), 400
     if not batch and not uploaded_files:
         return jsonify({"error": "請先上傳題目照片"}), 400
-    if len(uploaded_files) + (len(batch.photos) if batch else 0) > 8:
-        return jsonify({"error": "同一對話最多 8 張題目照片，請另開新對話"}), 400
+    if len(uploaded_files) > 8 or (not uploaded_files and batch and len(batch.photos) > 8):
+        return jsonify({"error": "每次最多送出 8 張題目照片"}), 400
+    total_bytes = 0
+    for file in uploaded_files:
+        file.stream.seek(0, 2)
+        size = file.stream.tell()
+        file.stream.seek(0)
+        if size > 20 * 1024 * 1024:
+            return jsonify(error="單張圖片不可超過 20 MB"), 400
+        total_bytes += size
+    if total_bytes > 120 * 1024 * 1024:
+        return jsonify(error="本次照片總大小不可超過 120 MB"), 400
     prompt = "請依照片題號解題，以參考解答卷的格式精簡呈現解法與答案。"
     from app.models.connection import ModelConnection
     connection = ModelConnection.query.filter_by(user_id=user_id, active=True).first()
@@ -132,14 +142,15 @@ def solve():
         batch_id = batch.id
 
     # 處理隨本次請求上傳的圖片
+    current_photos = []
     for f in uploaded_files:
-        PhotoController.save_photo(f, batch_id)
+        current_photos.append(PhotoController.save_photo(f, batch_id))
 
     batch.prompt = "照片題目 · {} 張".format(len(batch.photos))
     db.session.commit()
 
     # 取出此 batch 關聯的所有照片
-    photos = Photo.query.filter_by(batch_id=batch_id).all()
+    photos = current_photos or Photo.query.filter_by(batch_id=batch_id).order_by(Photo.created_at).all()
 
     if not photos:
         return jsonify({"error": "請先上傳題目照片"}), 400
