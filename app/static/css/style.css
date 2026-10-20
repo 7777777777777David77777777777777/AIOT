@@ -36,3 +36,4 @@ body,button,input,textarea,select{font-family:var(--site-font)}
 .question-header{justify-content:space-between;margin:4px 0 12px}.question-number{font-size:18px;font-weight:700;color:var(--ink);line-height:1.5}
 
 .rename-chat{border:1px solid #ddd;border-radius:5px;background:white;padding:4px 8px;font-size:11px;white-space:nowrap}.header-title{flex:1}.header-title h1{min-width:0}
+#cameraDialog{width:min(680px,94vw);max-height:92dvh;overflow:auto}#cameraVideo,#cameraCanvas{display:block;width:100%;max-height:55dvh;object-fit:contain;background:#171917;border-radius:8px}#cameraVideo[hidden],#cameraCanvas[hidden],.camera-actions [hidden]{display:none}.camera-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}.camera-actions button{flex:1;margin:0}#cameraError{font-size:14px;color:#8e4735}

@@ -122,7 +122,7 @@ function newChat() {
 const emptyTemplate = $('emptyChat').cloneNode(true);
 $('newChat').onclick = newChat; $('newChatMobile').onclick = newChat;
 function choose() { if (!state.busy) $('fileInput').click(); }
-$('attachBtn').onclick = choose; $('choosePhotos').onclick = choose; $('emptyUpload').onclick = choose;
+$('attachBtn').onclick = () => { if (!state.busy) $('photoSourceDialog').showModal(); }; $('choosePhotos').onclick = choose; $('emptyUpload').onclick = choose;
 function addFiles(files) {
   if (state.busy) return;
   const errors = new Set();

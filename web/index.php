@@ -9,7 +9,7 @@ web_session(); page_headers(); $csrf = $_SESSION["csrf"]; session_write_close();
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f7f5">
 <title>拍題解答</title>
 <meta name="csrf-token" content="<?= escape_html($csrf) ?>">
-<link rel="stylesheet" href="/static/vendor/katex/katex.min.css"><link rel="stylesheet" href="/static/css/style.css?v=model-self-confidence-1">
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css"><link rel="stylesheet" href="/static/css/style.css?v=camera-1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet"></head>
 <body>
 <aside class="sidebar" id="sidebar">
@@ -27,6 +27,9 @@ web_session(); page_headers(); $csrf = $_SESSION["csrf"]; session_write_close();
 <dialog id="deviceDialog"><div class="dialog-heading"><h2>我的裝置</h2><button data-close aria-label="關閉">×</button></div><div id="devices"></div><button class="primary-btn" id="createDevice">顯示固定裝置碼</button><div id="tokenResult" hidden><label for="deviceToken">帳號裝置碼（固定 6 碼）</label><textarea id="deviceToken" readonly rows="1"></textarea><p class="fineprint">在 ESP32 輸入這組 6 碼英數字，即對應此帳號。登出或重啟都不會改變，請勿分享。</p></div></dialog>
 <dialog id="renameDialog"><form id="renameForm"><div class="dialog-heading"><h2>重新命名考試</h2><button type="button" data-close aria-label="關閉">×</button></div><label for="renameTitle">考試名稱</label><input id="renameTitle" maxlength="100" required><p class="form-error" role="alert"></p><button class="primary-btn">儲存名稱</button></form></dialog><dialog id="accountDialog"><div class="dialog-heading"><h2>帳號</h2><button data-close aria-label="關閉">×</button></div><p id="accountInfo"></p><button id="logoutBtn" class="primary-btn">登出</button></dialog>
 <dialog id="imageDialog" class="image-dialog"><button data-close class="image-close" aria-label="關閉圖片">×</button><img id="fullImage" alt="題目原圖"></dialog>
+<dialog id="photoSourceDialog" aria-labelledby="photoSourceTitle"><div class="dialog-heading"><h2 id="photoSourceTitle">加入照片</h2><button data-close aria-label="關閉">×</button></div><div class="camera-actions"><button type="button" id="sourceCamera" class="primary-btn">拍照</button><button type="button" id="sourceFiles" class="outline-btn">選擇照片</button></div></dialog>
+<dialog id="cameraDialog" aria-labelledby="cameraTitle"><div class="dialog-heading"><h2 id="cameraTitle">拍攝題目</h2><button data-close aria-label="關閉相機">×</button></div><p class="fineprint">拍攝後先預覽，加入待送出照片後再送出解題。</p><video id="cameraVideo" autoplay muted playsinline></video><canvas id="cameraCanvas" hidden></canvas><p id="cameraError" role="status"></p><div class="camera-actions"><button type="button" class="primary-btn" id="cameraCapture" disabled>拍攝</button><button type="button" class="outline-btn" id="cameraRetake" hidden>重拍</button><button type="button" class="primary-btn" id="cameraUse" hidden>使用照片</button></div></dialog>
 <div id="toast" role="status" hidden></div>
 <script src="/static/vendor/marked.min.js"></script><script src="/static/vendor/purify.min.js"></script><script src="/static/vendor/katex/katex.min.js"></script><script src="/static/vendor/katex/auto-render.min.js"></script><script src="/static/js/photo-input.js?v=1"></script><script src="/static/js/app.js?v=<?= filemtime(__DIR__ . '/../app/static/js/app.js') ?>"></script>
+<script src="/static/js/camera.js?v=<?= filemtime(__DIR__ . '/../app/static/js/camera.js') ?>"></script>
 </body></html>

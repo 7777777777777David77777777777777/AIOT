@@ -47,3 +47,6 @@ run.py 同時啟動 PHP、Uvicorn、worker；Flask 登入／模型／管理員�
 
 2026-10-20：Render photo-exam-solver.onrender.com 的6ae3932已顯示Live及健康200；首頁403，develop修正Apache內部router.php被禁止的規則，部署後仍需驗證首頁、static、API。
 
+
+2026-10-20：網站上傳列＋開啟來源選單（拍照／選擇照片）。拍照才請求getUserMedia，優先後鏡頭、不取音訊；預覽／重拍／使用照片，沿用既有待送及限制。關閉或背景停止串流。camera.js及test_camera.cjs，尚待手機真相機驗證。
+

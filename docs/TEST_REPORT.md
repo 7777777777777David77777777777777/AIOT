@@ -49,3 +49,7 @@ Flask登入／模型／管理員相容層仍存在；版本化資料遷移尚待
 ## 2026-10-20 Render 首頁403修正
 雲端6ae3932已建置成功、健康檢查200，但首頁回403。發現.htaccess將內部router.php轉送一併禁止。修正為僅禁止外部直接請求router.php，目錄交由DirectoryIndex index.php處理。PHP/Uvicorn整合測試1項通過，啟動腳本語法檢查通過。本機無Apache/Docker，Apache修正仍需雲端部署後驗證。
 
+
+## 網頁拍照測試
+node test_camera.cjs：拍攝加入JPEG與停止鏡頭、等待授權時先關閉、拒絕權限三類模擬檢查通過。app.js與camera.js語法檢查通過，PHP頁面語法檢查通過。沒有開啟使用者實際鏡頭；手機瀏覽器權限、取景和真照片上傳待部署後驗證。
+
