@@ -229,3 +229,7 @@ model_connections、admin_roles、admin_audit、chat_metadata、solve_tasks。
 ## 14. 下一步
 
 ESP32 C++ 狀態機與實機顯示、標準答案品質測試集、真實 Postgres／Docker／Render 壓力測試、版本化資料遷移。
+
+## 2026-10-20 Render 實測更新
+6ae3932已在Render建置啟動並通過健康檢查，並非已完成全部上線驗收。首頁403的Apache重寫規則已修正於develop；版本上線後需驗證首頁、登入、靜態資源與API。
+

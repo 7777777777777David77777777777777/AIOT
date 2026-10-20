@@ -1,4 +1,4 @@
-"""Render container entrypoint: Apache/PHP public, Gunicorn private."""
+"""Render container entrypoint: Apache/PHP public, Uvicorn and worker private."""
 import os
 from pathlib import Path
 
@@ -25,6 +25,7 @@ def prepare():
     Path("/etc/apache2/sites-enabled/000-default.conf").write_text(f'''<VirtualHost *:{port}>
     ServerName localhost
     DocumentRoot /app/web
+    DirectoryIndex index.php
     SetEnvIf X-Forwarded-Proto "^https$" HTTPS=on
     SetEnvIf Authorization "^(.*)$" HTTP_AUTHORIZATION=$1
     PassEnv PYTHON_API_URL

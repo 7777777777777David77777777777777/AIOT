@@ -44,3 +44,6 @@ run.py 同時啟動 PHP、Uvicorn、worker；Flask 登入／模型／管理員�
 啟動 create_all 增加新表，沒有版本化遷移工具。裝置純文字公式轉換有限。
 59項測試58通過、1真實Postgres跳過；模型回應使用模擬，不代表答案正確率。
 實機 ESP32、真實模型品質、Docker／Render／Postgres 壓力仍待驗證。
+
+2026-10-20：Render photo-exam-solver.onrender.com 的6ae3932已顯示Live及健康200；首頁403，develop修正Apache內部router.php被禁止的規則，部署後仍需驗證首頁、static、API。
+

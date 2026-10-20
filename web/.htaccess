@@ -1,5 +1,9 @@
 DirectoryIndex index.php
 RewriteEngine On
-RewriteRule ^(?:bootstrap|router)\.php$ - [F,L]
+RewriteRule ^bootstrap\.php$ - [F,L]
+# Block direct requests, but allow Apache's internal rewrite to router.php.
+RewriteCond %{THE_REQUEST} "\s/+router\.php(?:[?\s])" [NC]
+RewriteRule ^router\.php$ - [F,L]
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ router.php [QSA,L]
